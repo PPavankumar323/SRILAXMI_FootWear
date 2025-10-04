@@ -1,0 +1,355 @@
+import { router } from './router.js';
+import { state, addToCart, toggleWishlist, removeFromCart, updateCartQuantity, placeOrder, deleteProduct, addProduct, updateProduct, addAddress, updateAddress, deleteAddress } from './state.js';
+import { openModal, closeModal } from '../components/Modal.js';
+import { toggleAuthForm } from '../components/Auth.js';
+import { renderHeader } from '../components/Header.js';
+import { renderAdminProductForm } from '../components/AdminProductForm.js';
+import { renderAddressForm } from '../components/AddressForm.js';
+import { supabase } from './supabase.js';
+
+let sliderInterval;
+let selectedSize = null;
+
+function showToast(message, isError = false) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification';
+  if (isError) toast.style.backgroundColor = 'var(--danger-color)';
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.classList.add('show'), 10);
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => container.removeChild(toast), 300);
+  }, 3000);
+}
+
+function updateHeader() {
+  const headerContainer = document.querySelector('.header');
+  if (headerContainer) headerContainer.outerHTML = renderHeader();
+}
+
+export function setupSlider() {
+  const slider = document.getElementById('slider-container');
+  if (!slider) return;
+  const dots = document.querySelectorAll('.slider-dot');
+  let currentIndex = 0;
+  function goToSlide(index) {
+    if (!slider || !dots[index]) return;
+    slider.style.transform = `translateX(-${index * 100}%)`;
+    dots.forEach(dot => dot.classList.remove('active'));
+    dots[index].classList.add('active');
+    currentIndex = index;
+  }
+  dots.forEach(dot => dot.addEventListener('click', () => goToSlide(parseInt(dot.dataset.slide))));
+  clearInterval(sliderInterval);
+  sliderInterval = setInterval(() => goToSlide((currentIndex + 1) % dots.length), 5000);
+}
+
+export function initEventListeners() {
+  const body = document.body;
+
+  body.addEventListener('click', async (e) => {
+    // --- Generic Click Handlers ---
+    const link = e.target.closest('[data-link]');
+    if (link) { e.preventDefault(); router.navigate(link.getAttribute('href')); return; }
+    
+    const closeBtn = e.target.closest('[data-close-modal]');
+    if (closeBtn) { closeModal(closeBtn.dataset.closeModal); return; }
+
+    // --- Auth & Header ---
+    if (e.target.closest('#login-link')) {
+      if (!state.currentUser) openModal('auth-modal');
+      else router.navigate('/profile');
+      return;
+    }
+    if (e.target.id === 'show-signup') { toggleAuthForm('signup'); return; }
+    if (e.target.id === 'show-login') { toggleAuthForm('login'); return; }
+    if (e.target.id === 'logout-btn') {
+      await supabase.auth.signOut();
+      showToast('Logged out successfully.');
+      router.navigate('/');
+      return;
+    }
+
+    // --- Product & Cart Actions ---
+    const addToCartBtn = e.target.closest('[data-add-cart]');
+    if (addToCartBtn) {
+      const productId = addToCartBtn.dataset.addCart;
+      const product = state.products.find(p => p.id === productId);
+      if (window.location.pathname.includes('/product/') && product.sizes.length > 0 && !selectedSize) {
+        showToast('Please select a size first.', true); return;
+      }
+      await addToCart(product, 1, selectedSize);
+      updateHeader();
+      showToast(`${product.name} added to cart!`);
+      selectedSize = null;
+      return;
+    }
+    
+    const buyNowBtn = e.target.closest('#buy-now-btn');
+    if (buyNowBtn) {
+      const productId = window.location.pathname.split('/').pop();
+      const product = state.products.find(p => p.id === productId);
+      if (product.sizes.length > 0 && !selectedSize) {
+        showToast('Please select a size first.', true); return;
+      }
+      await addToCart(product, 1, selectedSize);
+      router.navigate('/checkout');
+      return;
+    }
+
+    const wishlistBtn = e.target.closest('[data-wishlist]');
+    if (wishlistBtn) {
+      const productId = wishlistBtn.dataset.wishlist;
+      const wasAdded = await toggleWishlist(productId);
+      wishlistBtn.innerHTML = wasAdded ? '❤️' : '🤍';
+      wishlistBtn.classList.toggle('active', wasAdded);
+      updateHeader();
+      showToast(wasAdded ? 'Added to wishlist!' : 'Removed from wishlist.');
+      return;
+    }
+    
+    const sizeBtn = e.target.closest('.size-btn');
+    if (sizeBtn) {
+      document.querySelectorAll('.size-btn').forEach(btn => btn.classList.remove('selected'));
+      sizeBtn.classList.add('selected');
+      selectedSize = sizeBtn.dataset.size;
+      return;
+    }
+    
+    const thumbImage = e.target.closest('.thumb-image');
+    if (thumbImage) {
+      document.getElementById('main-image').src = thumbImage.src;
+      document.querySelectorAll('.thumb-image').forEach(img => img.style.borderColor = 'transparent');
+      thumbImage.style.borderColor = 'var(--primary-color)';
+      return;
+    }
+    
+    const qtyBtn = e.target.closest('.qty-btn');
+    if (qtyBtn) {
+      const { id, size, action } = qtyBtn.dataset;
+      const item = state.cart.find(i => i.product.id === id && i.size == size);
+      if (item) {
+        const newQty = action === 'increase' ? item.quantity + 1 : item.quantity - 1;
+        await updateCartQuantity(id, size, newQty);
+        router.resolve();
+        updateHeader();
+      }
+      return;
+    }
+    
+    const removeBtn = e.target.closest('[data-remove]');
+    if (removeBtn) {
+      const { remove: id, size } = removeBtn.dataset;
+      await removeFromCart(id, size);
+      router.resolve();
+      updateHeader();
+      showToast('Item removed from cart.');
+      return;
+    }
+    
+    if (e.target.id === 'checkout-btn') { router.navigate('/checkout'); return; }
+    
+    // --- Filtering & Search ---
+    if (e.target.id === 'search-btn') {
+      const input = document.getElementById('search-input');
+      if (input.value.trim()) router.navigate(`/products?search=${encodeURIComponent(input.value.trim())}`);
+      return;
+    }
+    
+    if (e.target.id === 'apply-filters') {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('brand'); params.delete('gender'); params.delete('color');
+      document.querySelectorAll('[data-filter="brand"]:checked').forEach(el => params.append('brand', el.value));
+      document.querySelectorAll('[data-filter="gender"]:checked').forEach(el => params.append('gender', el.value));
+      document.querySelectorAll('[data-filter="color"]:checked').forEach(el => params.append('color', el.value));
+      params.set('priceMin', document.getElementById('price-min').value);
+      params.set('priceMax', document.getElementById('price-max').value);
+      router.navigate(`/products?${params.toString()}`);
+      return;
+    }
+    
+    if (e.target.id === 'clear-filters') {
+      const category = new URLSearchParams(window.location.search).get('category');
+      router.navigate(category ? `/products?category=${category}` : '/products');
+      return;
+    }
+
+    // --- Checkout ---
+    if (e.target.id === 'place-order-btn') {
+      const form = document.getElementById('checkout-form');
+      if (!state.currentUser) { showToast('You must be logged in.', true); openModal('auth-modal'); return; }
+      if (form.checkValidity()) {
+        const formData = new FormData(form);
+        const address = {
+          fullName: formData.get('fullName'), email: formData.get('email'), phone: formData.get('phone'),
+          address1: formData.get('address1'), address2: formData.get('address2'), city: formData.get('city'),
+          state: formData.get('state'), pincode: formData.get('pincode'),
+        };
+        try {
+          await placeOrder({ address });
+          updateHeader();
+          showToast('Order placed successfully!');
+          router.navigate('/profile?tab=orders');
+        } catch (error) { showToast(error.message, true); }
+      } else { form.reportValidity(); showToast('Please fill all required fields.', true); }
+      return;
+    }
+
+    // --- Address Management ---
+    if (e.target.id === 'add-address-btn') {
+      const modalBody = document.querySelector('#address-modal .modal-body');
+      modalBody.innerHTML = renderAddressForm();
+      openModal('address-modal');
+      return;
+    }
+
+    const editAddressBtn = e.target.closest('.edit-address-btn');
+    if (editAddressBtn) {
+      const address = state.addresses.find(a => a.id === editAddressBtn.dataset.id);
+      if (address) {
+        const modalBody = document.querySelector('#address-modal .modal-body');
+        modalBody.innerHTML = renderAddressForm(address);
+        openModal('address-modal');
+      }
+      return;
+    }
+
+    const deleteAddressBtn = e.target.closest('.delete-address-btn');
+    if (deleteAddressBtn) {
+      if (confirm('Are you sure you want to delete this address?')) {
+        try {
+          await deleteAddress(deleteAddressBtn.dataset.id);
+          showToast('Address deleted.');
+          router.resolve();
+        } catch (error) { showToast(`Error: ${error.message}`, true); }
+      }
+      return;
+    }
+
+    // --- ADMIN EVENTS ---
+    if (e.target.id === 'add-product-btn') {
+      const modalBody = document.querySelector('#admin-product-modal .modal-body');
+      modalBody.innerHTML = renderAdminProductForm();
+      openModal('admin-product-modal');
+      return;
+    }
+
+    const editProductBtn = e.target.closest('.edit-product-btn');
+    if (editProductBtn) {
+      const { data: product } = await supabase.from('products').select('*').eq('id', editProductBtn.dataset.id).single();
+      if (product) {
+        const modalBody = document.querySelector('#admin-product-modal .modal-body');
+        modalBody.innerHTML = renderAdminProductForm(product);
+        openModal('admin-product-modal');
+      }
+      return;
+    }
+
+    const deleteBtn = e.target.closest('.delete-product-btn');
+    if (deleteBtn) {
+      if (confirm('Are you sure you want to delete this product? This cannot be undone.')) {
+        try {
+          await deleteProduct(deleteBtn.dataset.id);
+          showToast('Product deleted successfully.');
+          router.resolve();
+        } catch (error) { showToast(`Error: ${error.message}`, true); }
+      }
+      return;
+    }
+  });
+
+  body.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    // --- Auth Forms ---
+    if (e.target.id === 'login-form') {
+      const { error } = await supabase.auth.signInWithPassword({ email: e.target.querySelector('#login-email').value, password: e.target.querySelector('#login-password').value });
+      if (error) showToast(`Login failed: ${error.message}`, true);
+      else { closeModal('auth-modal'); showToast(`Welcome back!`); }
+      return;
+    }
+    if (e.target.id === 'signup-form') {
+      const name = e.target.querySelector('#signup-name').value;
+      const email = e.target.querySelector('#signup-email').value;
+      const { data, error } = await supabase.auth.signUp({ email, password: e.target.querySelector('#signup-password').value, options: { data: { full_name: name } } });
+      if (error) showToast(`Sign up failed: ${error.message}`, true);
+      else if (data.user) {
+        const { error: profileError } = await supabase.from('profiles').insert({ id: data.user.id, full_name: name, email: email });
+        if (profileError) showToast(`Profile creation failed: ${profileError.message}`, true);
+        else { closeModal('auth-modal'); showToast('Account created! Check email for verification.'); }
+      }
+      return;
+    }
+    
+    // --- Profile Forms ---
+    if (e.target.id === 'profile-form') {
+      const { error } = await supabase.from('profiles').update({ full_name: e.target.querySelector('[name="name"]').value, phone: e.target.querySelector('[name="phone"]').value }).eq('id', state.currentUser.id);
+      if (error) showToast(`Update failed: ${error.message}`, true);
+      else { showToast('Profile updated!'); router.resolve(); }
+      return;
+    }
+    if (e.target.id === 'password-form') {
+      const newPassword = e.target.querySelector('[name="newPassword"]').value;
+      if (newPassword.length < 6) { showToast('Password must be at least 6 characters.', true); return; }
+      if (newPassword !== e.target.querySelector('[name="confirmPassword"]').value) { showToast('Passwords do not match.', true); return; }
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) showToast(`Update failed: ${error.message}`, true);
+      else { showToast('Password updated!'); e.target.reset(); }
+      return;
+    }
+
+    // --- Address Form ---
+    if (e.target.id === 'address-form') {
+      const formData = new FormData(e.target);
+      const addressData = Object.fromEntries(formData.entries());
+      const id = addressData.id;
+      delete addressData.id;
+      try {
+        if (id) await updateAddress(id, addressData);
+        else await addAddress(addressData);
+        showToast(`Address ${id ? 'updated' : 'saved'}!`);
+        closeModal('address-modal');
+        router.resolve();
+      } catch (error) { showToast(`Error: ${error.message}`, true); }
+      return;
+    }
+
+    // --- Admin Product Form ---
+    if (e.target.id === 'admin-product-form') {
+      const formData = new FormData(e.target);
+      const productData = {
+        name: formData.get('name'), description: formData.get('description'), price: parseFloat(formData.get('price')),
+        originalPrice: parseFloat(formData.get('originalPrice')), discount: parseInt(formData.get('discount')), stock: parseInt(formData.get('stock')),
+        category_id: formData.get('category_id'), brand_id: formData.get('brand_id'), image: formData.get('image'),
+        images: formData.get('images').split(',').map(s => s.trim()), sizes: formData.get('sizes').split(',').map(s => s.trim()),
+        color: formData.get('color'), gender: formData.get('gender'), rating: parseFloat(formData.get('rating')),
+        reviews: parseInt(formData.get('reviews')), features: formData.get('features').split(',').map(s => s.trim()),
+        inStock: formData.get('inStock') === 'on',
+      };
+      const id = formData.get('id');
+      try {
+        if (id) await updateProduct(id, productData);
+        else await addProduct(productData);
+        showToast(`Product ${id ? 'updated' : 'added'}!`);
+        closeModal('admin-product-modal');
+        router.resolve();
+      } catch (error) { showToast(`Error: ${error.message}`, true); }
+      return;
+    }
+    
+    if (e.target.id === 'contact-form') { e.target.reset(); showToast('Message sent! We will get back to you soon.'); return; }
+  });
+  
+  body.addEventListener('change', (e) => {
+    if (e.target.id === 'sort-select') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('sort', e.target.value);
+      router.navigate(`/products?${params.toString()}`);
+    }
+  });
+  
+  body.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.id === 'search-input') document.getElementById('search-btn').click();
+  });
+}

@@ -1,0 +1,181 @@
+import { state, fetchUserAddresses } from '../utils/state.js';
+import { supabase } from '../utils/supabase.js';
+import { router } from '../utils/router.js';
+
+export async function renderProfilePage() {
+  if (!state.currentUser) {
+    router.navigate('/');
+    return `<div class="container loading">Redirecting...</div>`;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const activeTab = params.get('tab') || 'orders';
+  
+  const { data: orders, error } = await supabase
+    .from('orders')
+    .select(`id, created_at, total_amount, status, order_items (count)`)
+    .eq('user_id', state.currentUser.id)
+    .order('created_at', { ascending: false });
+
+  if (error) console.error('Error fetching orders:', error);
+  
+  await fetchUserAddresses();
+  
+  return `
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/" data-link>Home</a>
+        <span>›</span>
+        <span>My Account</span>
+      </div>
+      
+      <h1 style="font-size: 28px; font-weight: 600; margin: 24px 0;">My Account</h1>
+      
+      <div style="display: grid; grid-template-columns: 250px 1fr; gap: 24px; margin-bottom: 40px;">
+        <div class="filters-sidebar">
+          <div style="padding: 16px; background: var(--bg-light); border-radius: 8px; margin-bottom: 20px;">
+            <div style="font-size: 18px; font-weight: 600; margin-bottom: 4px;">${state.userProfile?.full_name || state.currentUser.email}</div>
+            <div style="font-size: 13px; color: var(--text-secondary);">${state.currentUser.email}</div>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <a href="/profile?tab=orders" data-link class="nav-link" style="padding: 12px 16px; border-radius: 4px; ${activeTab === 'orders' ? 'background: var(--primary-color); color: white;' : ''}">📦 My Orders</a>
+            <a href="/profile?tab=wishlist" data-link class="nav-link" style="padding: 12px 16px; border-radius: 4px; ${activeTab === 'wishlist' ? 'background: var(--primary-color); color: white;' : ''}">❤️ Wishlist</a>
+            <a href="/profile?tab=addresses" data-link class="nav-link" style="padding: 12px 16px; border-radius: 4px; ${activeTab === 'addresses' ? 'background: var(--primary-color); color: white;' : ''}">📍 Saved Addresses</a>
+            <a href="/profile?tab=account" data-link class="nav-link" style="padding: 12px 16px; border-radius: 4px; ${activeTab === 'account' ? 'background: var(--primary-color); color: white;' : ''}">👤 Account Settings</a>
+            <button class="nav-link" id="logout-btn" style="padding: 12px 16px; border-radius: 4px; text-align: left; width: 100%;">🚪 Logout</button>
+          </div>
+        </div>
+        
+        <div class="main-content">
+          ${renderTabContent(activeTab, orders || [])}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTabContent(tab, orders) {
+  switch(tab) {
+    case 'orders': return renderOrdersTab(orders);
+    case 'wishlist': return renderWishlistTab();
+    case 'addresses': return renderAddressesTab();
+    case 'account': return renderAccountTab();
+    default: return renderOrdersTab(orders);
+  }
+}
+
+function renderOrdersTab(orders) {
+  if (orders.length === 0) {
+    return `<div class="empty-state"><div class="empty-state-icon">📦</div><div class="empty-state-text">You haven't placed any orders yet.</div><a href="/products" data-link class="btn btn-primary">Start Shopping</a></div>`;
+  }
+
+  return `
+    <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">My Orders</h2>
+    ${orders.map(order => `
+      <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+          <div>
+            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 4px;">Order #${order.id.split('-')[0]}</div>
+            <div style="font-size: 13px; color: var(--text-secondary);">Placed on ${new Date(order.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+          </div>
+          <div><span style="padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: ${getStatusColor(order.status)}; color: white;">${order.status}</span></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">${order.order_items[0].count} ${order.order_items[0].count === 1 ? 'item' : 'items'}</div>
+            <div style="font-size: 20px; font-weight: 600;">₹${order.total_amount.toFixed(2)}</div>
+          </div>
+          <div style="display: flex; gap: 12px;"><button class="btn btn-primary">View Details</button></div>
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderWishlistTab() {
+  if (state.wishlist.length === 0) {
+    return `<div class="empty-state"><div class="empty-state-icon">❤️</div><div class="empty-state-text">Your wishlist is empty</div><a href="/products" data-link class="btn btn-primary">Browse Products</a></div>`;
+  }
+  return `
+    <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">My Wishlist (${state.wishlist.length})</h2>
+    <div class="product-grid">
+      ${state.wishlist.map(product => `
+        <div class="product-card" style="position: relative;">
+          <button class="wishlist-btn active" data-wishlist="${product.id}">❤️</button>
+          <a href="/product/${product.id}" data-link><img src="${product.image}" alt="${product.name}" class="product-image" /></a>
+          <div class="product-info">
+            <div class="product-brand">${product.brand}</div>
+            <a href="/product/${product.id}" data-link><div class="product-name">${product.name}</div></a>
+            <div class="product-rating"><span class="rating-badge">⭐ ${product.rating}</span><span class="rating-count">(${product.reviews.toLocaleString()})</span></div>
+            <div><span class="product-price">₹${product.price.toFixed(2)}</span><span class="product-original-price">₹${product.originalPrice.toFixed(2)}</span></div>
+            <button class="btn btn-primary" style="width: 100%; margin-top: 12px; font-size: 13px;" data-add-cart="${product.id}">Add to Cart</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderAddressesTab() {
+  return `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <h2 style="font-size: 24px; font-weight: 600;">Saved Addresses</h2>
+      <button class="btn btn-primary" id="add-address-btn">+ Add New Address</button>
+    </div>
+    ${state.addresses.length === 0 ? `
+      <div class="empty-state"><div class="empty-state-icon">📍</div><div class="empty-state-text">You have no saved addresses.</div></div>
+    ` : `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        ${state.addresses.map(addr => `
+          <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+              <div style="font-weight: 600;">${addr.full_name} <span style="font-weight: 500; font-size: 12px; color: var(--text-secondary); background: var(--bg-light); padding: 4px 8px; border-radius: 4px;">${addr.address_type}</span></div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-outline edit-address-btn" data-id="${addr.id}" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+                <button class="btn btn-outline delete-address-btn" data-id="${addr.id}" style="padding: 4px 8px; font-size: 12px; color: var(--danger-color);">Delete</button>
+              </div>
+            </div>
+            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.6;">
+              ${addr.address_line_1}, ${addr.address_line_2 ? addr.address_line_2 + ',' : ''}<br>
+              ${addr.city}, ${addr.state} - ${addr.pincode}<br>
+              ${addr.country}<br>
+              Phone: ${addr.phone}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+function renderAccountTab() {
+  const profile = state.userProfile;
+  const user = state.currentUser;
+  return `
+    <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 24px;">Account Settings</h2>
+    <form id="profile-form">
+      <div class="form-group"><label class="form-label">Full Name</label><input type="text" class="form-input" value="${profile?.full_name || ''}" name="name" /></div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" value="${user?.email || ''}" name="email" disabled /></div>
+      <div class="form-group"><label class="form-label">Phone Number</label><input type="tel" class="form-input" value="${profile?.phone || ''}" name="phone" /></div>
+      <button type="submit" class="btn btn-primary">Update Profile</button>
+    </form>
+    <hr style="margin: 40px 0; border: none; border-top: 1px solid var(--border-color);" />
+    <h3 style="font-size: 20px; font-weight: 600; margin-bottom: 20px;">Change Password</h3>
+    <form id="password-form">
+      <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-input" name="newPassword" placeholder="Must be at least 6 characters" /></div>
+      <div class="form-group"><label class="form-label">Confirm New Password</label><input type="password" class="form-input" name="confirmPassword" /></div>
+      <button type="submit" class="btn btn-primary">Change Password</button>
+    </form>
+  `;
+}
+
+function getStatusColor(status) {
+  switch(status) {
+    case 'Delivered': return 'var(--success-color)';
+    case 'Shipped': return 'var(--primary-color)';
+    case 'Processing': return 'var(--secondary-color)';
+    case 'Cancelled': return 'var(--danger-color)';
+    default: return 'var(--text-secondary)';
+  }
+}

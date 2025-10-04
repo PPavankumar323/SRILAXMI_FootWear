@@ -1,0 +1,27 @@
+import { faker } from '@faker-js/faker';
+
+// NOTE: Product generation is now handled by the Supabase backend.
+// This file is kept for other mock data generation like orders.
+
+export function generateMockProducts(count) {
+  // This function is deprecated. Products are fetched from Supabase.
+  return [];
+}
+
+export function generateOrders(count) {
+  const orders = [];
+  const statuses = ['Delivered', 'Shipped', 'Processing', 'Cancelled'];
+  
+  for (let i = 0; i < count; i++) {
+    orders.push({
+      id: faker.string.alphanumeric(10).toUpperCase(),
+      date: faker.date.past({ years: 1 }),
+      status: faker.helpers.arrayElement(statuses),
+      total: parseFloat(faker.commerce.price({ min: 1000, max: 50000 })),
+      items: faker.number.int({ min: 1, max: 5 }),
+      trackingId: faker.string.alphanumeric(16).toUpperCase()
+    });
+  }
+  
+  return orders.sort((a, b) => b.date - a.date);
+}

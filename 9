@@ -1,0 +1,125 @@
+import { state, getCartCount } from '../utils/state.js';
+
+export function renderHeader() {
+  const cartCount = getCartCount();
+  const wishlistCount = state.wishlist.length;
+  
+  return `
+    <header class="header">
+      <div class="header-top">
+        <div class="container">
+          SRI LAXMI FOOT WEAR - Import, Export and Retail | Free Shipping on Orders Above ₹999
+        </div>
+      </div>
+      
+      <div class="header-main">
+        <div class="container">
+          <div class="header-content">
+            <a href="/" data-link class="logo">
+              <span>SRI LAXMI FOOT WEAR</span>
+              <span class="logo-subtitle">Import, Export and Retail</span>
+            </a>
+            
+            <div class="search-bar">
+              <input 
+                type="text" 
+                class="search-input" 
+                placeholder="Search for footwear, belts, eyeglasses..."
+                id="search-input"
+              />
+              <button class="search-btn" id="search-btn">
+                🔍
+              </button>
+            </div>
+            
+            <div class="header-actions">
+              <div class="header-link" id="login-link">
+                ${state.currentUser ? `
+                  <span>👤</span>
+                  <span>${state.userProfile?.full_name?.split(' ')[0] || 'Account'}</span>
+                ` : `
+                  <span>👤</span>
+                  <span>Login</span>
+                `}
+              </div>
+              
+              <a href="/profile?tab=wishlist" data-link class="header-link">
+                <span>❤️</span>
+                <span>Wishlist</span>
+                ${wishlistCount > 0 ? `<span class="badge">${wishlistCount}</span>` : ''}
+              </a>
+              
+              <div class="header-link" id="cart-link">
+                <span>🛒</span>
+                <span>Cart</span>
+                ${cartCount > 0 ? `<span class="badge cart-count">${cartCount}</span>` : '<span class="badge cart-count" style="display:none;">0</span>'}
+                ${renderCartPreview()}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <nav class="nav-bar">
+        <div class="container">
+          <div class="nav-content">
+            <a href="/" data-link class="nav-link">🏠 Home</a>
+            
+            <div class="dropdown">
+              <span class="nav-link">Categories ▾</span>
+              <div class="dropdown-menu">
+                <a href="/products?category=footwear" data-link class="dropdown-item">👟 Footwear</a>
+                <a href="/products?category=belts" data-link class="dropdown-item">👔 Belts</a>
+                <a href="/products?category=eyeglasses" data-link class="dropdown-item">👓 Eyeglasses</a>
+              </div>
+            </div>
+            
+            <a href="/products?category=footwear&gender=Men" data-link class="nav-link">Men</a>
+            <a href="/products?category=footwear&gender=Women" data-link class="nav-link">Women</a>
+            <a href="/products" data-link class="nav-link">All Products</a>
+            <a href="/about" data-link class="nav-link">About Us</a>
+            <a href="/contact" data-link class="nav-link">Contact</a>
+          </div>
+        </div>
+      </nav>
+    </header>
+  `;
+}
+
+function renderCartPreview() {
+  if (state.cart.length === 0) {
+    return `
+      <div class="cart-preview">
+        <div class="empty-state" style="padding: 20px;">
+          <p>Your cart is empty</p>
+        </div>
+      </div>
+    `;
+  }
+  
+  const cartItems = state.cart.slice(0, 3).map(item => `
+    <div class="cart-item">
+      <img src="${item.product.image}" alt="${item.product.name}" class="cart-item-image" />
+      <div class="cart-item-info">
+        <div class="cart-item-name">${item.product.name}</div>
+        <div class="cart-item-price">₹${item.product.price.toFixed(2)} × ${item.quantity}</div>
+      </div>
+    </div>
+  `).join('');
+  
+  const total = state.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  
+  return `
+    <div class="cart-preview">
+      ${cartItems}
+      ${state.cart.length > 3 ? `<div style="padding: 12px; text-align: center; color: var(--text-secondary); font-size: 13px;">+${state.cart.length - 3} more items</div>` : ''}
+      <div class="cart-total">
+        <span>Total:</span>
+        <span>₹${total.toFixed(2)}</span>
+      </div>
+      <div style="padding: 12px;">
+        <a href="/cart" data-link class="btn btn-primary" style="width: 100%; display: block;">View Cart</a>
+      </div>
+    </div>
+  `;
+}

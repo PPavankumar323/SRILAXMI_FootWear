@@ -1,0 +1,72 @@
+export function renderPrivacyPage() {
+  return `
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/" data-link>Home</a>
+        <span>›</span>
+        <span>Privacy Policy</span>
+      </div>
+      
+      <div class="main-content" style="margin: 24px auto; max-width: 900px;">
+        <h1 style="font-size: 36px; font-weight: 700; margin-bottom: 16px;">Privacy Policy</h1>
+        <p style="color: var(--text-secondary); margin-bottom: 40px;">Last updated: January 2025</p>
+        
+        <div style="color: var(--text-secondary); line-height: 1.8;">
+          <section style="margin-bottom: 32px;">
+            <h2 style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px;">1. Information We Collect</h2>
+            <p style="margin-bottom: 12px;">
+              We collect information you provide directly to us when you create an account, make a purchase, or contact us. 
+              This includes your name, email address, phone number, shipping address, and payment information.
+            </p>
+          </section>
+          
+          <section style="margin-bottom: 32px;">
+            <h2 style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px;">2. How We Use Your Information</h2>
+            <p style="margin-bottom: 12px;">We use the information we collect to:</p>
+            <ul style="margin-left: 20px; margin-bottom: 12px;">
+              <li>Process and fulfill your orders</li>
+              <li>Send you order confirmations and updates</li>
+              <li>Respond to your comments and questions</li>
+              <li>Send you marketing communications (with your consent)</li>
+              <li>Improve our website and services</li>
+            </ul>
+          </section>
+          
+          <section style="margin-bottom: 32px;">
+            <h2 style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px;">3. Information Sharing</h2>
+            <p style="margin-bottom: 12px;">
+              We do not sell or rent your personal information to third parties. We may share your information with 
+              service providers who assist us in operating our website and conducting our business.
+            </p>
+          </section>
+          
+          <section style="margin-bottom: 32px;">
+            <h2 style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px;">4. Data Security</h2>
+            <p style="margin-bottom: 12px;">
+              We implement appropriate security measures to protect your personal information from unauthorized access, 
+              alteration, disclosure, or destruction.
+            </p>
+          </section>
+          
+          <section style="margin-bottom: 32px;">
+            <h2 style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px;">5. Your Rights</h2>
+            <p style="margin-bottom: 12px;">You have the right to:</p>
+            <ul style="margin-left: 20px; margin-bottom: 12px;">
+              <li>Access your personal information</li>
+              <li>Correct inaccurate information</li>
+              <li>Request deletion of your information</li>
+              <li>Opt-out of marketing communications</li>
+            </ul>
+          </section>
+          
+          <section style="margin-bottom: 32px;">
+            <h2 style="font-size: 24px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px;">6. Contact Us</h2>
+            <p style="margin-bottom: 12px;">
+              If you have any questions about this Privacy Policy, please contact us at privacy@srilaxmifootwear.com
+            </p>
+          </section>
+        </div>
+      </div>
+    </div>
+  `;
+}

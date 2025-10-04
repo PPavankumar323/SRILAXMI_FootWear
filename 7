@@ -1,0 +1,52 @@
+class Router {
+  constructor() {
+    this.routes = [];
+    this.currentPath = '/';
+  }
+
+  on(path, handler) {
+    this.routes.push({ path, handler });
+  }
+
+  navigate(path) {
+    window.history.pushState({}, '', path);
+    this.resolve();
+  }
+
+  resolve() {
+    const path = window.location.pathname;
+    this.currentPath = path;
+
+    for (const route of this.routes) {
+      const paramNames = [];
+      const regexPath = route.path.replace(/:([^/]+)/g, (_, paramName) => {
+        paramNames.push(paramName);
+        return '([^/]+)';
+      });
+
+      const regex = new RegExp(`^${regexPath}$`);
+      const match = path.match(regex);
+
+      if (match) {
+        const params = {};
+        paramNames.forEach((name, index) => {
+          params[name] = match[index + 1];
+        });
+        route.handler(params);
+        return;
+      }
+    }
+
+    const exactRoute = this.routes.find(r => r.path === path);
+    if (exactRoute) {
+      exactRoute.handler({});
+    }
+  }
+
+  init() {
+    window.addEventListener('popstate', () => this.resolve());
+    this.resolve();
+  }
+}
+
+export const router = new Router();

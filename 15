@@ -1,0 +1,172 @@
+import { state, getCartTotal, clearCart } from '../utils/state.js';
+
+export function renderCheckoutPage() {
+  if (state.cart.length === 0) {
+    return `
+      <div class="container">
+        <div class="empty-state">
+          <div class="empty-state-icon">🛒</div>
+          <div class="empty-state-text">Your cart is empty</div>
+          <a href="/products" data-link class="btn btn-primary">Continue Shopping</a>
+        </div>
+      </div>
+    `;
+  }
+  
+  const subtotal = getCartTotal();
+  const shipping = subtotal > 999 ? 0 : 50;
+  const total = subtotal + shipping;
+  
+  return `
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/" data-link>Home</a>
+        <span>›</span>
+        <a href="/cart" data-link>Cart</a>
+        <span>›</span>
+        <span>Checkout</span>
+      </div>
+      
+      <h1 style="font-size: 28px; font-weight: 600; margin: 24px 0;">Checkout</h1>
+      
+      <div style="display: grid; grid-template-columns: 1fr 400px; gap: 24px; margin-bottom: 40px;">
+        <div>
+          <div class="main-content" style="margin-bottom: 24px;">
+            <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 20px;">Delivery Address</h2>
+            
+            <form id="checkout-form">
+              <div class="form-group">
+                <label class="form-label">Full Name *</label>
+                <input type="text" class="form-input" required name="fullName" />
+              </div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                  <label class="form-label">Email *</label>
+                  <input type="email" class="form-input" required name="email" />
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label">Phone Number *</label>
+                  <input type="tel" class="form-input" required name="phone" />
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Address Line 1 *</label>
+                <input type="text" class="form-input" required name="address1" />
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Address Line 2</label>
+                <input type="text" class="form-input" name="address2" />
+              </div>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                  <label class="form-label">City *</label>
+                  <input type="text" class="form-input" required name="city" />
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label">State *</label>
+                  <input type="text" class="form-input" required name="state" />
+                </div>
+                
+                <div class="form-group">
+                  <label class="form-label">PIN Code *</label>
+                  <input type="text" class="form-input" required name="pincode" pattern="[0-9]{6}" />
+                </div>
+              </div>
+            </form>
+          </div>
+          
+          <div class="main-content">
+            <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 20px;">Payment Method</h2>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <label style="padding: 16px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                <input type="radio" name="payment" value="upi" checked />
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 4px;">UPI</div>
+                  <div style="font-size: 13px; color: var(--text-secondary);">PhonePe, GPay, Paytm, Amazon Pay</div>
+                </div>
+              </label>
+              
+              <label style="padding: 16px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                <input type="radio" name="payment" value="card" />
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 4px;">Credit/Debit Card</div>
+                  <div style="font-size: 13px; color: var(--text-secondary);">Visa, Mastercard, RuPay</div>
+                </div>
+              </label>
+              
+              <label style="padding: 16px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                <input type="radio" name="payment" value="netbanking" />
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 4px;">Net Banking</div>
+                  <div style="font-size: 13px; color: var(--text-secondary);">All Indian banks</div>
+                </div>
+              </label>
+              
+              <label style="padding: 16px; border: 2px solid var(--border-color); border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px;">
+                <input type="radio" name="payment" value="cod" />
+                <div>
+                  <div style="font-weight: 600; margin-bottom: 4px;">Cash on Delivery</div>
+                  <div style="font-size: 13px; color: var(--text-secondary);">Pay when you receive</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <div class="main-content">
+            <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 20px;">Order Summary</h2>
+            
+            <div style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+              ${state.cart.map(item => `
+                <div style="display: flex; gap: 12px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                  <img src="${item.product.image}" alt="${item.product.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px;" />
+                  <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">${item.product.name}</div>
+                    <div style="font-size: 13px; color: var(--text-secondary);">Qty: ${item.quantity}</div>
+                    <div style="font-weight: 600; margin-top: 4px;">₹${(item.product.price * item.quantity).toFixed(2)}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span>Subtotal</span>
+                <span style="font-weight: 600;">₹${subtotal.toFixed(2)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span>Shipping</span>
+                <span style="font-weight: 600; color: ${shipping === 0 ? 'var(--success-color)' : 'inherit'};">
+                  ${shipping === 0 ? 'FREE' : `₹${shipping.toFixed(2)}`}
+                </span>
+              </div>
+            </div>
+            
+            <div style="border-top: 2px solid var(--border-color); padding-top: 16px; margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: 700;">
+                <span>Total</span>
+                <span>₹${total.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <button class="btn btn-primary" id="place-order-btn" style="width: 100%; padding: 14px; font-size: 16px;">
+              Place Order
+            </button>
+            
+            <div style="background: var(--bg-light); padding: 12px; border-radius: 4px; margin-top: 16px; font-size: 13px; color: var(--text-secondary); text-align: center;">
+              🔒 Secure Payment Gateway
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}

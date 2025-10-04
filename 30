@@ -1,0 +1,74 @@
+/*
+          # [Operation] Create Addresses Table
+          [This script creates a new table `addresses` to store user shipping addresses and enables Row Level Security.]
+
+          ## Query Description: 
+          - Creates the `addresses` table to allow users to save multiple shipping addresses.
+          - Each address is linked to a user via the `user_id` field.
+          - Enables Row Level Security (RLS) on the new table to ensure users can only access their own addresses.
+          - Creates policies for SELECT, INSERT, UPDATE, and DELETE to enforce this security.
+          - This is a non-destructive operation and is safe to run.
+          
+          ## Metadata:
+          - Schema-Category: "Structural"
+          - Impact-Level: "Low"
+          - Requires-Backup: false
+          - Reversible: true (the table can be dropped)
+          
+          ## Structure Details:
+          - Table Created: `public.addresses`
+          - Columns: `id`, `user_id`, `full_name`, `phone`, `address_line_1`, `address_line_2`, `city`, `state`, `pincode`, `created_at`
+          
+          ## Security Implications:
+          - RLS Status: Enabled
+          - Policy Changes: Yes (new policies for the `addresses` table)
+          - Auth Requirements: Users must be authenticated to manage their addresses.
+          
+          ## Performance Impact:
+          - Indexes: A foreign key index is automatically created on `user_id`.
+          - Triggers: None
+          - Estimated Impact: Low. This adds a new, efficient table for a core feature.
+*/
+
+-- 1. Create the addresses table
+CREATE TABLE public.addresses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    full_name TEXT NOT NULL,
+    phone TEXT NOT NULL,
+    address_line_1 TEXT NOT NULL,
+    address_line_2 TEXT,
+    city TEXT NOT NULL,
+    state TEXT NOT NULL,
+    pincode TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- 2. Add comments to the table and columns for clarity
+COMMENT ON TABLE public.addresses IS 'Stores shipping addresses for users.';
+COMMENT ON COLUMN public.addresses.user_id IS 'Links the address to a user in the auth.users table.';
+
+-- 3. Enable Row Level Security
+ALTER TABLE public.addresses ENABLE ROW LEVEL SECURITY;
+
+-- 4. Create RLS policies
+CREATE POLICY "Users can view their own addresses"
+ON public.addresses
+FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own addresses"
+ON public.addresses
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own addresses"
+ON public.addresses
+FOR UPDATE
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own addresses"
+ON public.addresses
+FOR DELETE
+USING (auth.uid() = user_id);

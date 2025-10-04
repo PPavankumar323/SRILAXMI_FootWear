@@ -1,0 +1,127 @@
+import './style.css';
+import { router } from './utils/router.js';
+import { state, syncLocalDataToDb, fetchUserCart, fetchUserWishlist, fetchUserProfile } from './utils/state.js';
+import { renderHeader } from './components/Header.js';
+import { renderFooter } from './components/Footer.js';
+import { renderModal } from './components/Modal.js';
+import { renderAuthForm } from './components/Auth.js';
+import { renderAdminProductForm } from './components/AdminProductForm.js';
+import { renderAddressForm } from './components/AddressForm.js';
+import { initEventListeners, setupSlider } from './utils/events.js';
+import { supabase } from './utils/supabase.js';
+
+import { renderHomePage } from './pages/Home.js';
+import { renderProductListingPage } from './pages/ProductListing.js';
+import { renderProductDetailPage } from './pages/ProductDetail.js';
+import { renderCartPage } from './pages/Cart.js';
+import { renderCheckoutPage } from './pages/Checkout.js';
+import { renderProfilePage } from './pages/Profile.js';
+import { renderAdminPage } from './pages/Admin.js';
+import { renderAboutPage } from './pages/About.js';
+import { renderContactPage } from './pages/Contact.js';
+import { renderPrivacyPage } from './pages/Privacy.js';
+import { renderTermsPage } from './pages/Terms.js';
+
+async function init() {
+  // Fetch initial product data for homepage/fallbacks
+  const { data: products, error } = await supabase
+    .from('products')
+    .select(`
+      *,
+      categories (name),
+      brands (name)
+    `)
+    .limit(50); // Limit initial load
+
+  if (error) {
+    console.error('Error fetching initial products:', error);
+  } else {
+    state.products = products.map(p => ({
+      ...p,
+      category: p.categories.name,
+      brand: p.brands.name,
+      categories: undefined, 
+      brands: undefined,
+    }));
+  }
+  
+  // Set up auth state listener
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    state.currentUser = session?.user || null;
+    state.userProfile = null;
+    
+    if (event === 'SIGNED_IN') {
+      await fetchUserProfile();
+      await syncLocalDataToDb();
+      await fetchUserCart();
+      await fetchUserWishlist();
+    } else if (event === 'SIGNED_OUT') {
+      state.cart = JSON.parse(localStorage.getItem('cart') || '[]');
+      state.wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    } else {
+      // For initial load or token refresh
+      if (state.currentUser) {
+        await fetchUserProfile();
+        await fetchUserCart();
+        await fetchUserWishlist();
+      }
+    }
+    
+    router.resolve(); // Re-render the current page to update UI
+  });
+
+  // Initial data fetch for already logged-in user
+  const { data: { session } } = await supabase.auth.getSession();
+  state.currentUser = session?.user || null;
+  if (state.currentUser) {
+    await fetchUserProfile();
+    await fetchUserCart();
+    await fetchUserWishlist();
+  } else {
+    state.cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    state.wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+  }
+  
+  document.getElementById('modal-container').innerHTML = `
+    ${renderModal('auth-modal', 'Login / Sign Up', renderAuthForm())}
+    ${renderModal('admin-product-modal', 'Manage Product', renderAdminProductForm())}
+    ${renderModal('address-modal', 'Manage Address', renderAddressForm())}
+  `;
+  
+  router.on('/', async () => await render(renderHomePage()));
+  router.on('/products', async () => {
+    const params = new URLSearchParams(window.location.search);
+    await render(await renderProductListingPage(params));
+  });
+  router.on('/product/:id', async (params) => await render(renderProductDetailPage(params.id)));
+  router.on('/cart', async () => await render(renderCartPage()));
+  router.on('/checkout', async () => await render(renderCheckoutPage()));
+  router.on('/profile', async () => await render(await renderProfilePage()));
+  router.on('/admin', async () => await render(await renderAdminPage()));
+  router.on('/about', async () => await render(renderAboutPage()));
+  router.on('/contact', async () => await render(renderContactPage()));
+  router.on('/privacy', async () => await render(renderPrivacyPage()));
+  router.on('/terms', async () => await render(renderTermsPage()));
+  
+  router.init();
+  initEventListeners();
+}
+
+async function render(content) {
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    ${renderHeader()}
+    <main>
+      ${await content}
+    </main>
+    ${renderFooter()}
+  `;
+
+  if (window.location.pathname === '/') {
+    setupSlider();
+  }
+  
+  window.scrollTo(0, 0);
+}
+
+init();

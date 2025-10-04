@@ -1,0 +1,8 @@
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  server: {
+    // To prevent Vite from clearing the screen
+    clearScreen: false, 
+  },
+})

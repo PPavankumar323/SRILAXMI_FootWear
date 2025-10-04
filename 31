@@ -1,0 +1,64 @@
+export function renderAddressForm(address = {}) {
+  return `
+    <form id="address-form">
+      <input type="hidden" name="id" value="${address.id || ''}" />
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label class="form-label">Full Name *</label>
+          <input type="text" name="full_name" class="form-input" value="${address.full_name || ''}" required />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Phone Number *</label>
+          <input type="tel" name="phone" class="form-input" value="${address.phone || ''}" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Address Type *</label>
+          <select name="address_type" class="form-input" required>
+            <option value="Home" ${address.address_type === 'Home' ? 'selected' : ''}>Home</option>
+            <option value="Work" ${address.address_type === 'Work' ? 'selected' : ''}>Work</option>
+            <option value="Other" ${address.address_type === 'Other' ? 'selected' : ''}>Other</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Address Line 1 *</label>
+        <input type="text" name="address_line_1" class="form-input" value="${address.address_line_1 || ''}" required />
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label">Address Line 2</label>
+        <input type="text" name="address_line_2" class="form-input" value="${address.address_line_2 || ''}" />
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label class="form-label">City *</label>
+          <input type="text" name="city" class="form-input" value="${address.city || ''}" required />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">State *</label>
+          <input type="text" name="state" class="form-input" value="${address.state || ''}" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">PIN Code *</label>
+          <input type="text" name="pincode" class="form-input" value="${address.pincode || ''}" required pattern="[0-9]{6}" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Country *</label>
+          <input type="text" name="country" class="form-input" value="${address.country || 'India'}" required />
+        </div>
+      </div>
+      
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">
+        ${address.id ? 'Update Address' : 'Save Address'}
+      </button>
+    </form>
+  `;
+}

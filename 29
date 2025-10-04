@@ -1,0 +1,73 @@
+export function renderAdminProductForm(product = {}) {
+  const categories = [
+    { id: 'c4e4c294-0a37-4993-b369-216a35a55d4c', name: 'Footwear' },
+    { id: 'b0c0c294-0a37-4993-b369-216a35a55d4d', name: 'Belts' },
+    { id: 'd1d1c294-0a37-4993-b369-216a35a55d4e', name: 'Eyeglasses' },
+  ];
+  const brands = [
+    { id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef', name: 'Nike' },
+    { id: 'b2c3d4e5-f6a7-8901-2345-67890abcdef1', name: 'Adidas' },
+    { id: 'c3d4e5f6-a7b8-9012-3456-7890abcdef23', name: 'Puma' },
+    { id: 'd4e5f6a7-b8c9-0123-4567-890abcdef345', name: 'Ray-Ban' },
+    { id: 'e5f6a7b8-c9d0-1234-5678-90abcdef4567', name: 'Gucci' },
+  ];
+
+  return `
+    <form id="admin-product-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <input type="hidden" name="id" value="${product.id || ''}" />
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <label class="form-label">Product Name *</label>
+        <input type="text" name="name" class="form-input" value="${product.name || ''}" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Category *</label>
+        <select name="category_id" class="form-input" required>
+          <option value="">Select Category</option>
+          ${categories.map(c => `<option value="${c.id}" ${product.category_id === c.id ? 'selected' : ''}>${c.name}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Brand *</label>
+        <select name="brand_id" class="form-input" required>
+          <option value="">Select Brand</option>
+          ${brands.map(b => `<option value="${b.id}" ${product.brand_id === b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
+        </select>
+      </div>
+
+      <div class="form-group"><label class="form-label">Price *</label><input type="number" name="price" step="0.01" class="form-input" value="${product.price || ''}" required /></div>
+      <div class="form-group"><label class="form-label">Original Price *</label><input type="number" name="originalPrice" step="0.01" class="form-input" value="${product.originalPrice || ''}" required /></div>
+      <div class="form-group"><label class="form-label">Discount (%) *</label><input type="number" name="discount" class="form-input" value="${product.discount || '0'}" required /></div>
+      <div class="form-group"><label class="form-label">Stock Quantity *</label><input type="number" name="stock" class="form-input" value="${product.stock || '0'}" required /></div>
+
+      <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Description *</label><textarea name="description" class="form-input" rows="4" required>${product.description || ''}</textarea></div>
+      <div class="form-group"><label class="form-label">Main Image URL *</label><input type="url" name="image" class="form-input" value="${product.image || ''}" required /></div>
+      <div class="form-group"><label class="form-label">Other Image URLs (comma-separated)</label><input type="text" name="images" class="form-input" value="${(product.images || []).join(', ')}" /></div>
+      <div class="form-group"><label class="form-label">Sizes (comma-separated)</label><input type="text" name="sizes" class="form-input" value="${(product.sizes || []).join(', ')}" /></div>
+      <div class="form-group"><label class="form-label">Features (comma-separated)</label><input type="text" name="features" class="form-input" value="${(product.features || []).join(', ')}" /></div>
+      <div class="form-group"><label class="form-label">Color</label><input type="text" name="color" class="form-input" value="${product.color || ''}" /></div>
+
+      <div class="form-group">
+        <label class="form-label">Gender</label>
+        <select name="gender" class="form-input">
+          <option value="Unisex" ${product.gender === 'Unisex' ? 'selected' : ''}>Unisex</option>
+          <option value="Men" ${product.gender === 'Men' ? 'selected' : ''}>Men</option>
+          <option value="Women" ${product.gender === 'Women' ? 'selected' : ''}>Women</option>
+        </select>
+      </div>
+
+      <div class="form-group"><label class="form-label">Rating (0-5)</label><input type="number" name="rating" step="0.1" class="form-input" value="${product.rating || '4.5'}" /></div>
+      <div class="form-group"><label class="form-label">Reviews Count</label><input type="number" name="reviews" class="form-input" value="${product.reviews || '0'}" /></div>
+
+      <div class="form-group" style="grid-column: 1 / -1; display: flex; align-items: center;">
+        <input type="checkbox" name="inStock" id="inStockCheckbox" ${product.inStock || product.id === undefined ? 'checked' : ''} />
+        <label for="inStockCheckbox" style="margin-left: 8px;">Product is in stock</label>
+      </div>
+
+      <div class="form-group" style="grid-column: 1 / -1;">
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Save Product</button>
+      </div>
+    </form>
+  `;
+}

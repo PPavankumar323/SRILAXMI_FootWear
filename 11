@@ -1,0 +1,155 @@
+import { state, addToCart, toggleWishlist, isInWishlist } from '../utils/state.js';
+
+export function renderHomePage() {
+  const newArrivals = state.products.slice(0, 8);
+  const bestSellers = state.products
+    .sort((a, b) => b.reviews - a.reviews)
+    .slice(0, 8);
+  const trending = state.products
+    .filter(p => p.discount > 30)
+    .slice(0, 8);
+  
+  return `
+    <div class="container">
+      ${renderBanner()}
+      
+      <section style="margin: 40px 0;">
+        <h2 class="section-title">New Arrivals</h2>
+        <div class="product-grid">
+          ${newArrivals.map(product => renderProductCard(product)).join('')}
+        </div>
+      </section>
+      
+      <section style="margin: 40px 0;">
+        <h2 class="section-title">Best Sellers</h2>
+        <div class="product-grid">
+          ${bestSellers.map(product => renderProductCard(product)).join('')}
+        </div>
+      </section>
+      
+      <section style="margin: 40px 0;">
+        <h2 class="section-title">Trending Deals</h2>
+        <div class="product-grid">
+          ${trending.map(product => renderProductCard(product)).join('')}
+        </div>
+      </section>
+      
+      ${renderCategories()}
+    </div>
+  `;
+}
+
+function renderBanner() {
+  const slides = [
+    {
+      image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200',
+      title: 'Premium Footwear Collection',
+      subtitle: 'Up to 50% OFF on Top Brands'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1624222247344-70f1b8f90a3c?w=1200',
+      title: 'Designer Belts',
+      subtitle: 'Starting from ₹499'
+    },
+    {
+      image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=1200',
+      title: 'Stylish Eyeglasses',
+      subtitle: 'New Season Arrivals'
+    }
+  ];
+  
+  return `
+    <div class="banner-slider">
+      <div class="slider-container" id="slider-container">
+        ${slides.map((slide, index) => `
+          <div class="slide">
+            <img src="${slide.image}" alt="${slide.title}" />
+            <div class="slide-content">
+              <h1 class="slide-title">${slide.title}</h1>
+              <p class="slide-subtitle">${slide.subtitle}</p>
+              <a href="/products" data-link class="btn btn-primary">Shop Now</a>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="slider-nav">
+        ${slides.map((_, index) => `
+          <span class="slider-dot ${index === 0 ? 'active' : ''}" data-slide="${index}"></span>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderProductCard(product) {
+  const inWishlist = isInWishlist(product.id);
+  
+  return `
+    <div class="product-card" style="position: relative;">
+      <button class="wishlist-btn ${inWishlist ? 'active' : ''}" data-wishlist="${product.id}">
+        ${inWishlist ? '❤️' : '🤍'}
+      </button>
+      <a href="/product/${product.id}" data-link>
+        <img src="${product.image}" alt="${product.name}" class="product-image" />
+      </a>
+      <div class="product-info">
+        <div class="product-brand">${product.brand}</div>
+        <a href="/product/${product.id}" data-link>
+          <div class="product-name">${product.name}</div>
+        </a>
+        <div class="product-rating">
+          <span class="rating-badge">
+            ⭐ ${product.rating}
+          </span>
+          <span class="rating-count">(${product.reviews.toLocaleString()})</span>
+        </div>
+        <div>
+          <span class="product-price">₹${product.price.toFixed(2)}</span>
+          <span class="product-original-price">₹${product.originalPrice.toFixed(2)}</span>
+          <span class="product-discount">${product.discount}% OFF</span>
+        </div>
+        <div class="product-actions" style="margin-top: 12px;">
+          <button class="btn btn-primary" style="flex: 1; font-size: 13px;" data-add-cart="${product.id}">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCategories() {
+  const categories = [
+    {
+      name: 'Footwear',
+      image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
+      link: '/products?category=footwear'
+    },
+    {
+      name: 'Belts',
+      image: 'https://images.unsplash.com/photo-1624222247344-70f1b8f90a3c?w=400',
+      link: '/products?category=belts'
+    },
+    {
+      name: 'Eyeglasses',
+      image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400',
+      link: '/products?category=eyeglasses'
+    }
+  ];
+  
+  return `
+    <section style="margin: 60px 0;">
+      <h2 class="section-title">Shop by Category</h2>
+      <div class="product-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        ${categories.map(cat => `
+          <a href="${cat.link}" data-link class="product-card" style="cursor: pointer;">
+            <img src="${cat.image}" alt="${cat.name}" class="product-image" style="height: 300px;" />
+            <div class="product-info" style="text-align: center; padding: 20px;">
+              <h3 style="font-size: 20px; font-weight: 600;">${cat.name}</h3>
+            </div>
+          </a>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}

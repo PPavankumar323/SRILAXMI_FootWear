@@ -1,0 +1,29 @@
+export function renderModal(id, title, content) {
+  return `
+    <div class="modal-overlay" id="${id}-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">${title}</h3>
+          <button class="modal-close" data-close-modal="${id}">&times;</button>
+        </div>
+        <div class="modal-body">
+          ${content}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+export function openModal(id) {
+  const modalOverlay = document.getElementById(`${id}-overlay`);
+  if (modalOverlay) {
+    modalOverlay.classList.add('active');
+  }
+}
+
+export function closeModal(id) {
+  const modalOverlay = document.getElementById(`${id}-overlay`);
+  if (modalOverlay) {
+    modalOverlay.classList.remove('active');
+  }
+}

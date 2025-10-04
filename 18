@@ -1,0 +1,72 @@
+export function renderAboutPage() {
+  return `
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/" data-link>Home</a>
+        <span>›</span>
+        <span>About Us</span>
+      </div>
+      
+      <div class="main-content" style="margin: 24px 0; max-width: 900px; margin-left: auto; margin-right: auto;">
+        <h1 style="font-size: 36px; font-weight: 700; margin-bottom: 24px; text-align: center;">About SRI LAXMI FOOT WEAR</h1>
+        
+        <div style="text-align: center; margin-bottom: 40px;">
+          <p style="font-size: 18px; color: var(--text-secondary); line-height: 1.8;">
+            Your Trusted Partner for Premium Footwear, Belts & Eyeglasses
+          </p>
+        </div>
+        
+        <div style="margin-bottom: 40px;">
+          <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 16px;">Our Story</h2>
+          <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px;">
+            SRI LAXMI FOOT WEAR has been a cornerstone in the Import, Export, and Retail business for quality footwear, 
+            belts, and eyeglasses. We pride ourselves on offering an extensive collection of premium brands and the latest 
+            fashion trends to our valued customers.
+          </p>
+          <p style="color: var(--text-secondary); line-height: 1.8;">
+            With years of experience in the industry, we have built strong relationships with leading manufacturers and 
+            brands worldwide, ensuring that our customers receive only the best products at competitive prices.
+          </p>
+        </div>
+        
+        <div style="margin-bottom: 40px;">
+          <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 16px;">Why Choose Us?</h2>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            <div style="background: var(--bg-light); padding: 24px; border-radius: 8px;">
+              <div style="font-size: 32px; margin-bottom: 12px;">🏆</div>
+              <h3 style="font-weight: 600; margin-bottom: 8px;">Premium Quality</h3>
+              <p style="color: var(--text-secondary); font-size: 14px;">Only authentic products from trusted brands</p>
+            </div>
+            
+            <div style="background: var(--bg-light); padding: 24px; border-radius: 8px;">
+              <div style="font-size: 32px; margin-bottom: 12px;">🌍</div>
+              <h3 style="font-weight: 600; margin-bottom: 8px;">Global Reach</h3>
+              <p style="color: var(--text-secondary); font-size: 14px;">Import & Export services worldwide</p>
+            </div>
+            
+            <div style="background: var(--bg-light); padding: 24px; border-radius: 8px;">
+              <div style="font-size: 32px; margin-bottom: 12px;">💰</div>
+              <h3 style="font-weight: 600; margin-bottom: 8px;">Best Prices</h3>
+              <p style="color: var(--text-secondary); font-size: 14px;">Competitive pricing with great deals</p>
+            </div>
+            
+            <div style="background: var(--bg-light); padding: 24px; border-radius: 8px;">
+              <div style="font-size: 32px; margin-bottom: 12px;">🚚</div>
+              <h3 style="font-weight: 600; margin-bottom: 8px;">Fast Delivery</h3>
+              <p style="color: var(--text-secondary); font-size: 14px;">Quick and reliable shipping</p>
+            </div>
+          </div>
+        </div>
+        
+        <div style="background: var(--bg-light); padding: 32px; border-radius: 8px; text-align: center;">
+          <h2 style="font-size: 24px; font-weight: 600; margin-bottom: 16px;">Our Mission</h2>
+          <p style="color: var(--text-secondary); line-height: 1.8; max-width: 700px; margin: 0 auto;">
+            To provide our customers with the finest selection of footwear, belts, and eyeglasses from around the world, 
+            while maintaining the highest standards of quality, service, and customer satisfaction. We strive to make fashion 
+            accessible and affordable for everyone.
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+}

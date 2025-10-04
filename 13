@@ -1,0 +1,157 @@
+import { state, addToCart, toggleWishlist, isInWishlist } from '../utils/state.js';
+
+export function renderProductDetailPage(productId) {
+  const product = state.products.find(p => p.id === productId);
+  
+  if (!product) {
+    return `
+      <div class="container">
+        <div class="empty-state">
+          <div class="empty-state-icon">😞</div>
+          <div class="empty-state-text">Product not found</div>
+          <a href="/products" data-link class="btn btn-primary">Browse Products</a>
+        </div>
+      </div>
+    `;
+  }
+  
+  const inWishlist = isInWishlist(product.id);
+  const relatedProducts = state.products
+    .filter(p => p.category === product.category && p.id !== product.id)
+    .slice(0, 4);
+  
+  return `
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/" data-link>Home</a>
+        <span>›</span>
+        <a href="/products?category=${product.category}" data-link>${product.category}</a>
+        <span>›</span>
+        <span>${product.name}</span>
+      </div>
+      
+      <div class="main-content" style="margin: 24px 0;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 40px;">
+          <div>
+            <div style="background: var(--bg-light); border-radius: 8px; overflow: hidden; margin-bottom: 16px;">
+              <img src="${product.image}" alt="${product.name}" id="main-image" style="width: 100%; height: 500px; object-fit: cover;" />
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+              ${product.images.map((img, index) => `
+                <img src="${img}" alt="${product.name}" class="thumb-image" 
+                     style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid ${index === 0 ? 'var(--primary-color)' : 'transparent'};" />
+              `).join('')}
+            </div>
+          </div>
+          
+          <div>
+            <h1 style="font-size: 28px; font-weight: 600; margin-bottom: 8px;">${product.name}</h1>
+            <div style="color: var(--text-secondary); margin-bottom: 16px;">${product.brand} | ${product.category}</div>
+            
+            <div class="product-rating" style="margin-bottom: 20px;">
+              <span class="rating-badge" style="font-size: 14px; padding: 4px 10px;">
+                ⭐ ${product.rating}
+              </span>
+              <span class="rating-count">${product.reviews.toLocaleString()} Ratings</span>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+              <div style="font-size: 32px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">
+                ₹${product.price.toFixed(2)}
+              </div>
+              <div>
+                <span style="text-decoration: line-through; color: var(--text-secondary); font-size: 18px;">₹${product.originalPrice.toFixed(2)}</span>
+                <span style="color: var(--success-color); font-weight: 600; font-size: 18px; margin-left: 12px;">${product.discount}% OFF</span>
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+              <div style="font-weight: 600; margin-bottom: 12px;">Select Size:</div>
+              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                ${product.sizes.map(size => `
+                  <button class="size-btn" data-size="${size}" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: 4px; background: white; cursor: pointer; font-weight: 500;">
+                    ${size}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+              <div style="font-weight: 600; margin-bottom: 8px;">Color: ${product.color}</div>
+            </div>
+            
+            <div style="display: flex; gap: 12px; margin-bottom: 24px;">
+              <button class="btn btn-secondary" id="add-to-cart-btn" style="flex: 1; padding: 14px; font-size: 16px;">
+                🛒 Add to Cart
+              </button>
+              <button class="btn btn-primary" id="buy-now-btn" style="flex: 1; padding: 14px; font-size: 16px;">
+                ⚡ Buy Now
+              </button>
+              <button class="btn btn-outline" id="wishlist-btn" style="padding: 14px 20px;">
+                ${inWishlist ? '❤️' : '🤍'}
+              </button>
+            </div>
+            
+            <div style="background: var(--bg-light); padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+              <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 12px;">Product Details</h3>
+              <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 16px;">${product.description}</p>
+              
+              <h4 style="font-weight: 600; margin-bottom: 8px;">Features:</h4>
+              <ul style="color: var(--text-secondary); line-height: 1.8;">
+                ${product.features.map(feature => `<li>${feature}</li>`).join('')}
+              </ul>
+            </div>
+            
+            <div style="background: var(--bg-light); padding: 20px; border-radius: 8px;">
+              <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Delivery & Returns</h3>
+              <div style="color: var(--text-secondary); font-size: 14px; line-height: 1.8;">
+                <p>✓ Free delivery on orders above ₹999</p>
+                <p>✓ Cash on Delivery available</p>
+                <p>✓ Easy 30 days return & exchange</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        ${relatedProducts.length > 0 ? `
+          <div style="margin-top: 60px;">
+            <h2 class="section-title">Related Products</h2>
+            <div class="product-grid">
+              ${relatedProducts.map(p => renderProductCard(p)).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function renderProductCard(product) {
+  const inWishlist = isInWishlist(product.id);
+  
+  return `
+    <div class="product-card" style="position: relative;">
+      <button class="wishlist-btn ${inWishlist ? 'active' : ''}" data-wishlist="${product.id}">
+        ${inWishlist ? '❤️' : '🤍'}
+      </button>
+      <a href="/product/${product.id}" data-link>
+        <img src="${product.image}" alt="${product.name}" class="product-image" />
+      </a>
+      <div class="product-info">
+        <div class="product-brand">${product.brand}</div>
+        <a href="/product/${product.id}" data-link>
+          <div class="product-name">${product.name}</div>
+        </a>
+        <div class="product-rating">
+          <span class="rating-badge">⭐ ${product.rating}</span>
+          <span class="rating-count">(${product.reviews.toLocaleString()})</span>
+        </div>
+        <div>
+          <span class="product-price">₹${product.price.toFixed(2)}</span>
+          <span class="product-original-price">₹${product.originalPrice.toFixed(2)}</span>
+          <span class="product-discount">${product.discount}% OFF</span>
+        </div>
+      </div>
+    </div>
+  `;
+}

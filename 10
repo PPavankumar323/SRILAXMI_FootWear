@@ -1,0 +1,61 @@
+export function renderFooter() {
+  return `
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h3>About Us</h3>
+            <ul class="footer-links">
+              <li><a href="/about" data-link>About SRI LAXMI</a></li>
+              <li><a href="/contact" data-link>Contact Us</a></li>
+              <li><a href="#" data-link>Careers</a></li>
+              <li><a href="#" data-link>Press</a></li>
+            </ul>
+          </div>
+          
+          <div class="footer-section">
+            <h3>Customer Service</h3>
+            <ul class="footer-links">
+              <li><a href="#" data-link>Help Center</a></li>
+              <li><a href="#" data-link>Track Order</a></li>
+              <li><a href="#" data-link>Returns & Refunds</a></li>
+              <li><a href="#" data-link>Shipping Info</a></li>
+            </ul>
+          </div>
+          
+          <div class="footer-section">
+            <h3>Policies</h3>
+            <ul class="footer-links">
+              <li><a href="/privacy" data-link>Privacy Policy</a></li>
+              <li><a href="/terms" data-link>Terms & Conditions</a></li>
+              <li><a href="#" data-link>Return Policy</a></li>
+              <li><a href="#" data-link>Cancellation Policy</a></li>
+            </ul>
+          </div>
+          
+          <div class="footer-section">
+            <h3>Connect With Us</h3>
+            <ul class="footer-links">
+              <li><a href="#">📘 Facebook</a></li>
+              <li><a href="#">📷 Instagram</a></li>
+              <li><a href="#">🐦 Twitter</a></li>
+              <li><a href="#">📺 YouTube</a></li>
+            </ul>
+            
+            <h3 style="margin-top: 24px;">Payment Methods</h3>
+            <div class="payment-methods">
+              <span class="payment-icon">UPI</span>
+              <span class="payment-icon">Cards</span>
+              <span class="payment-icon">NetBanking</span>
+              <span class="payment-icon">Wallets</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="footer-bottom">
+          © 2025 SRI LAXMI FOOT WEAR (Import, Export and Retail). All Rights Reserved.
+        </div>
+      </div>
+    </footer>
+  `;
+}

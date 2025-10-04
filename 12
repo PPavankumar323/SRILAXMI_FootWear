@@ -1,0 +1,199 @@
+import { state, isInWishlist } from '../utils/state.js';
+import { supabase } from '../utils/supabase.js';
+
+export async function renderProductListingPage(params) {
+  const category = params.get('category');
+  const search = params.get('search');
+  const brandsFilter = params.getAll('brand');
+  const gendersFilter = params.getAll('gender');
+  const colorsFilter = params.getAll('color');
+  const priceMin = parseInt(params.get('priceMin') || '0');
+  const priceMax = parseInt(params.get('priceMax') || '10000');
+  const sort = params.get('sort');
+
+  let pageTitle = 'All Products';
+  if (category) {
+    pageTitle = category.charAt(0).toUpperCase() + category.slice(1);
+  }
+  if (search) {
+    pageTitle = `Search results for "${search}"`;
+  }
+
+  // Build the query
+  let query = supabase
+    .from('products')
+    .select(`
+      *,
+      categories (name),
+      brands (name)
+    `, { count: 'exact' });
+
+  if (category) {
+    query = query.eq('categories.name', category);
+  }
+  if (search) {
+    query = query.textSearch('name', search, { type: 'websearch' });
+  }
+  if (brandsFilter.length > 0) {
+    query = query.in('brands.name', brandsFilter);
+  }
+  if (gendersFilter.length > 0) {
+    query = query.in('gender', gendersFilter);
+  }
+  if (colorsFilter.length > 0) {
+    query = query.in('color', colorsFilter);
+  }
+  
+  query = query.gte('price', priceMin).lte('price', priceMax);
+  
+  if (sort) {
+    const [sortKey, sortDir] = sort.split('-');
+    const isAscending = sortDir === 'low';
+    query = query.order(sortKey, { ascending: isAscending });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
+
+  const { data: products, error, count } = await query;
+
+  if (error) {
+    console.error('Error fetching filtered products:', error);
+    return `<div class="container loading">Error loading products.</div>`;
+  }
+
+  const filteredProducts = products.map(p => ({
+    ...p,
+    category: p.categories.name,
+    brand: p.brands.name,
+  }));
+
+  // Fetch filter options dynamically
+  const { data: allBrandsData } = await supabase.from('brands').select('name');
+  const { data: allColorsData } = await supabase.rpc('get_distinct_colors');
+  const allBrands = (allBrandsData || []).map(b => b.name);
+  const allGenders = ['Men', 'Women', 'Unisex'];
+  const allColors = (allColorsData || []).map(c => c.distinct_color);
+  
+  return `
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/" data-link>Home</a>
+        <span>›</span>
+        <span>${pageTitle}</span>
+      </div>
+      
+      <div class="page-layout">
+        <aside class="filters-sidebar">
+          <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px;">Filters</h3>
+          
+          <div class="filter-group">
+            <div class="filter-title">Brand</div>
+            ${allBrands.slice(0, 10).map(brand => `
+              <label class="filter-option">
+                <input type="checkbox" data-filter="brand" value="${brand}" ${brandsFilter.includes(brand) ? 'checked' : ''} />
+                <span>${brand}</span>
+              </label>
+            `).join('')}
+          </div>
+          
+          <div class="filter-group">
+            <div class="filter-title">Gender</div>
+            ${allGenders.map(gender => `
+              <label class="filter-option">
+                <input type="checkbox" data-filter="gender" value="${gender}" ${gendersFilter.includes(gender) ? 'checked' : ''} />
+                <span>${gender}</span>
+              </label>
+            `).join('')}
+          </div>
+          
+          <div class="filter-group">
+            <div class="filter-title">Color</div>
+            ${allColors.slice(0, 10).map(color => `
+              <label class="filter-option">
+                <input type="checkbox" data-filter="color" value="${color}" ${colorsFilter.includes(color) ? 'checked' : ''} />
+                <span>${color}</span>
+              </label>
+            `).join('')}
+          </div>
+          
+          <div class="filter-group">
+            <div class="filter-title">Price Range</div>
+            <div class="price-range">
+              <input type="number" class="price-input" placeholder="Min" id="price-min" value="${priceMin}" />
+              <span>to</span>
+              <input type="number" class="price-input" placeholder="Max" id="price-max" value="${priceMax}" />
+            </div>
+          </div>
+          
+          <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" id="apply-filters">
+            Apply Filters
+          </button>
+          <button class="btn btn-outline" style="width: 100%; margin-top: 10px;" id="clear-filters">
+            Clear All
+          </button>
+        </aside>
+        
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 16px; border-radius: 4px;">
+            <div style="font-size: 16px; font-weight: 500;">
+              ${count} Products Found
+            </div>
+            <select id="sort-select" style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 4px;">
+              <option value="">Sort By</option>
+              <option value="price-low" ${sort === 'price-low' ? 'selected' : ''}>Price: Low to High</option>
+              <option value="price-high" ${sort === 'price-high' ? 'selected' : ''}>Price: High to Low</option>
+              <option value="rating-high" ${sort === 'rating-high' ? 'selected' : ''}>Highest Rated</option>
+              <option value="discount-high" ${sort === 'discount-high' ? 'selected' : ''}>Best Discount</option>
+            </select>
+          </div>
+          
+          <div class="product-grid" id="products-container">
+            ${filteredProducts.length > 0 ? filteredProducts.map(product => renderProductCard(product)).join('') : `
+              <div class="empty-state" style="grid-column: 1 / -1;">
+                <div class="empty-state-icon">😞</div>
+                <div class="empty-state-text">No products match your filters.</div>
+              </div>
+            `}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderProductCard(product) {
+  const inWishlist = isInWishlist(product.id);
+  
+  return `
+    <div class="product-card" style="position: relative;">
+      <button class="wishlist-btn ${inWishlist ? 'active' : ''}" data-wishlist="${product.id}">
+        ${inWishlist ? '❤️' : '🤍'}
+      </button>
+      <a href="/product/${product.id}" data-link>
+        <img src="${product.image}" alt="${product.name}" class="product-image" />
+      </a>
+      <div class="product-info">
+        <div class="product-brand">${product.brand}</div>
+        <a href="/product/${product.id}" data-link>
+          <div class="product-name">${product.name}</div>
+        </a>
+        <div class="product-rating">
+          <span class="rating-badge">
+            ⭐ ${product.rating}
+          </span>
+          <span class="rating-count">(${product.reviews.toLocaleString()})</span>
+        </div>
+        <div>
+          <span class="product-price">₹${product.price.toFixed(2)}</span>
+          <span class="product-original-price">₹${product.originalPrice.toFixed(2)}</span>
+          <span class="product-discount">${product.discount}% OFF</span>
+        </div>
+        <div class="product-actions" style="margin-top: 12px;">
+          <button class="btn btn-primary" style="flex: 1; font-size: 13px;" data-add-cart="${product.id}">
+            Add to Cart
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}

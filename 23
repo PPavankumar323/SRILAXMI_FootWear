@@ -1,0 +1,56 @@
+export function renderAuthForm() {
+  return `
+    <div id="auth-container">
+      ${renderLoginForm()}
+    </div>
+  `;
+}
+
+function renderLoginForm() {
+  return `
+    <form id="login-form">
+      <div class="form-group">
+        <label for="login-email" class="form-label">Email Address</label>
+        <input type="email" id="login-email" class="form-input" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="login-password" class="form-label">Password</label>
+        <input type="password" id="login-password" class="form-input" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Login</button>
+      <div class="auth-toggle">
+        Don't have an account? <button type="button" id="show-signup">Sign Up</button>
+      </div>
+    </form>
+  `;
+}
+
+function renderSignupForm() {
+  return `
+    <form id="signup-form">
+      <div class="form-group">
+        <label for="signup-name" class="form-label">Full Name</label>
+        <input type="text" id="signup-name" class="form-input" required autocomplete="name">
+      </div>
+      <div class="form-group">
+        <label for="signup-email" class="form-label">Email Address</label>
+        <input type="email" id="signup-email" class="form-input" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="signup-password" class="form-label">Password</label>
+        <input type="password" id="signup-password" class="form-input" required minlength="6" autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Create Account</button>
+      <div class="auth-toggle">
+        Already have an account? <button type="button" id="show-login">Login</button>
+      </div>
+    </form>
+  `;
+}
+
+export function toggleAuthForm(show) {
+  const container = document.getElementById('auth-container');
+  if (container) {
+    container.innerHTML = show === 'signup' ? renderSignupForm() : renderLoginForm();
+  }
+}

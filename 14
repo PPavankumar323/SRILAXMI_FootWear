@@ -1,0 +1,98 @@
+import { state, removeFromCart, updateCartQuantity, getCartTotal } from '../utils/state.js';
+import { router } from '../utils/router.js';
+
+export function renderCartPage() {
+  if (state.cart.length === 0) {
+    return `
+      <div class="container">
+        <div class="empty-state">
+          <div class="empty-state-icon">🛒</div>
+          <div class="empty-state-text">Your cart is empty</div>
+          <a href="/products" data-link class="btn btn-primary">Continue Shopping</a>
+        </div>
+      </div>
+    `;
+  }
+  
+  const subtotal = getCartTotal();
+  const shipping = subtotal > 999 ? 0 : 50;
+  const total = subtotal + shipping;
+  
+  return `
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="/" data-link>Home</a>
+        <span>›</span>
+        <span>Shopping Cart</span>
+      </div>
+      
+      <h1 style="font-size: 28px; font-weight: 600; margin: 24px 0;">Shopping Cart (${state.cart.length} ${state.cart.length === 1 ? 'item' : 'items'})</h1>
+      
+      <div style="display: grid; grid-template-columns: 1fr 400px; gap: 24px; margin-bottom: 40px;">
+        <div class="main-content">
+          ${state.cart.map(item => `
+            <div class="cart-item" style="padding: 20px; border-bottom: 1px solid var(--border-color);">
+              <img src="${item.product.image}" alt="${item.product.name}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 8px;" />
+              <div style="flex: 1;">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">${item.product.name}</h3>
+                <div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 4px;">${item.product.brand}</div>
+                ${item.size ? `<div style="color: var(--text-secondary); font-size: 14px; margin-bottom: 8px;">Size: ${item.size}</div>` : ''}
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-primary); margin-bottom: 12px;">₹${item.product.price.toFixed(2)}</div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                  <div style="display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: 4px;">
+                    <button class="qty-btn" data-action="decrease" data-id="${item.product.id}" data-size="${item.size}" style="padding: 8px 12px; font-size: 16px;">−</button>
+                    <span style="padding: 8px 16px; min-width: 40px; text-align: center; font-weight: 500;">${item.quantity}</span>
+                    <button class="qty-btn" data-action="increase" data-id="${item.product.id}" data-size="${item.size}" style="padding: 8px 12px; font-size: 16px;">+</button>
+                  </div>
+                  <button class="btn btn-outline" data-remove="${item.product.id}" data-size="${item.size}" style="font-size: 14px;">Remove</button>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 20px; font-weight: 600;">₹${(item.product.price * item.quantity).toFixed(2)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div>
+          <div class="main-content">
+            <h2 style="font-size: 20px; font-weight: 600; margin-bottom: 20px;">Order Summary</h2>
+            
+            <div style="margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span>Subtotal</span>
+                <span style="font-weight: 600;">₹${subtotal.toFixed(2)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span>Shipping</span>
+                <span style="font-weight: 600; color: ${shipping === 0 ? 'var(--success-color)' : 'inherit'};">
+                  ${shipping === 0 ? 'FREE' : `₹${shipping.toFixed(2)}`}
+                </span>
+              </div>
+              ${shipping > 0 ? `
+                <div style="background: var(--bg-light); padding: 12px; border-radius: 4px; font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">
+                  Add ₹${(999 - subtotal).toFixed(2)} more for FREE delivery
+                </div>
+              ` : ''}
+            </div>
+            
+            <div style="border-top: 2px solid var(--border-color); padding-top: 16px; margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: 700;">
+                <span>Total</span>
+                <span>₹${total.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <button class="btn btn-primary" id="checkout-btn" style="width: 100%; padding: 14px; font-size: 16px;">
+              Proceed to Checkout
+            </button>
+            
+            <a href="/products" data-link class="btn btn-outline" style="width: 100%; padding: 14px; font-size: 16px; margin-top: 12px; display: block; text-align: center;">
+              Continue Shopping
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
